@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "snn-eeg-sleep"
+version = "0.1.0"
+description = "EEG sleep-stage classification with spiking neural networks"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
