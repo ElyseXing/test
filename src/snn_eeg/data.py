@@ -55,7 +55,11 @@ def load_sleep_edf(
     for subject, (psg_path, hypnogram_path) in zip(subjects, files):
         raw = mne.io.read_raw_edf(psg_path, preload=True, verbose="ERROR")
         raw.set_annotations(mne.read_annotations(hypnogram_path), emit_warning=False)
-        raw.pick(picks="eeg")
+        eeg_channels = [name for name in raw.ch_names if name.startswith("EEG ")]
+        if not eeg_channels:
+            raise ValueError(f"No EEG channels found in {psg_path}")
+        # The EDF reader labels non-EEG Sleep-EDF channels as EEG too.
+        raw.pick(picks=eeg_channels)
         raw.filter(l_freq=l_freq, h_freq=h_freq, verbose="ERROR")
 
         events, _ = mne.events_from_annotations(
@@ -73,6 +77,10 @@ def load_sleep_edf(
             reject={"eeg": reject_peak_to_peak_uv * 1e-6},
             verbose="ERROR",
         )
+        if len(epochs) == 0:
+            raise ValueError(
+                f"No usable epochs for subject {subject} after artifact rejection"
+            )
         epoch_data = epochs.get_data(picks="eeg")
         feature_parts.append(bandpower_features(epoch_data, raw.info["sfreq"]))
         label_parts.append(np.array([EVENT_TO_STAGE[int(code)] for code in epochs.events[:, 2]]))
